@@ -1,0 +1,36 @@
+library(ogbox)
+library(dplyr)
+library(magrittr)
+library(readr)
+library(tibble)
+
+softDown('GSE79238',file = 'data-raw/GSE79238.soft')
+
+neuroSeqMeta = softParser('data-raw/GSE79238.soft')
+
+
+neuroSeqMeta %<>% select(`!Sample_characteristics_ch1 = age (postnatal day)`,
+                         `!Sample_characteristics_ch1 = ercc_mix (ercc mix used)`,
+                         `!Sample_characteristics_ch1 = ercc5 (10^-5 dilution of ercc in ul)`,
+                         `!Sample_characteristics_ch1 = region`,
+                         `!Sample_characteristics_ch1 = Sex`,
+                         `!Sample_characteristics_ch1 = strain`,
+                         `!Sample_characteristics_ch1 = tissue`,
+                         `!Sample_characteristics_ch1 = weight (g)`,
+                         `!Sample_geo_accession`,
+                         `!Sample_description`,
+                         `!Sample_source_name_ch1`)
+
+names(neuroSeqMeta) = c('Age','Ercc Mix', 'Ercc dilution','Region','Sex','Strain','Tissue','Weight','GSE','sample_name','source')
+
+download.file('ftp://ftp.ncbi.nlm.nih.gov/geo/series/GSE79nnn/GSE79238/suppl/GSE79238_htseq-counts.txt.gz',destfile = 'data-raw/GSE79238_counts.gz')
+
+
+neuroSeqCounts = read_tsv('data-raw/GSE79238_counts.gz')
+
+neuroSeqCounts %<>% column_to_rownames("symbol")
+
+neuroSeqCounts = neuroSeqCounts[,neuroSeqMeta$sample_name]
+
+
+
