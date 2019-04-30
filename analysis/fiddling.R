@@ -4,7 +4,7 @@ library(magrittr)
 library(readr)
 library(tibble)
 
-softDown('GSE79238',file = 'data-raw/GSE79238.soft')
+# softDown('GSE79238',file = 'data-raw/GSE79238.soft')
 
 neuroSeqMeta = softParser('data-raw/GSE79238.soft')
 
@@ -33,4 +33,48 @@ neuroSeqCounts %<>% column_to_rownames("symbol")
 neuroSeqCounts = neuroSeqCounts[,neuroSeqMeta$sample_name]
 
 
+regionMap = list(Cerebellum = '^Cerebellum',
+                 Hippocampus = '^Hippocampus',
+                 Hypothalamus = '^Hypothalamus',
+                 Cortex = '^Isocortex',
+                 Medulla = '^Medulla',
+                 Midbrain = '^Midbrain',
+                 Olfactory = '^Olfactory',
+                 `Spinal Cord` = '^Spinal Cord',
+                 Striatum = '^Striatum',
+                 Thalamus = '^Thalamus',
+                 Pons = '^Pons')
 
+neuroSeqHierarchy = list(All =
+                             list(Cerebrum = list(Cortex = '',
+                                                  Hippocampus = '',
+                                                  Olfactory = '',
+                                                  Striatum = ''),
+                                  `Brain stem` = list(
+                                      Interbrain = list(Thalamus = '',
+                                                        Hypothalamus = ''),
+                                      Midbrain = '',
+                                      Hindbrain = list(Medulla = '',
+                                                       Pons = '')
+                                  ),
+                                  Cerebellum = '',
+                                  `Spinal Cord` = ''
+                                  ))
+
+neuroSeqMeta$broadSource = neuroSeqMeta$source %>% sapply(function(x){
+    out = regionMap %>% sapply(function(y){
+        grepl(pattern = y, x,perl = TRUE,ignore.case = TRUE)
+    }) %>% which %>% names
+    if(length(out) == 0 | length(out)>1){
+        out = ''
+    }
+    return(out)
+})
+
+neuroSeqMeta$source[neuroSeqMeta$broadSource == ""]  %>% table %>% sort 
+
+neuroSeqMeta$sample_name %>% stringr::str_split('\\.|_') %>% sapply(function(x){
+    x[-((length(x)-1):length(x))] %>% paste(collapse = '_')
+}) %>% table
+
+neuroSeqMeta$source %>% sapply(assignRegion,regionMap)
